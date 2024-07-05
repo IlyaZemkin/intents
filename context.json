@@ -1,0 +1,56 @@
+"context": {
+    "awsRequestId": "e8705946-012f-41dd-843c-957a13b0deb3",
+    "requestId": "e8705946-012f-41dd-843c-957a13b0deb3",
+    "invokedFunctionArn": "d4emnnv17bdjtfrcj093",
+    "functionName": "d4emnnv17bdjtfrcj093",
+    "functionVersion": "d4e9tqsrjverdqh9odla",
+    "functionFolderId": "b1gciacuekgcm6bftfm6",
+    "memoryLimitInMB": "128",
+    "deadlineMs": 1719906693293,
+    "logGroupName": "",
+    "uberTraceId": "26a7802105d92da4:3c4a298dfff0b486:5ff14c5823e49375:1",
+    "_data": {
+      "meta": {
+        "locale": "ru-RU",
+        "timezone": "UTC",
+        "client_id": "ru.yandex.searchplugin/7.16 (none none; android 4.4.2)",
+        "interfaces": {
+          "screen": {},
+          "payments": {},
+          "account_linking": {}
+        }
+      },
+      "session": {
+        "message_id": 0,
+        "session_id": "f2e89498-86cc-4232-a6a6-d404c044e3ae",
+        "skill_id": "fc26138b-a97f-4787-8d0d-cb2bbbabf56a",
+        "user": {
+          "user_id": "7CE68DBC36C178D540FF0D0A9B70F90AE0DFB063DF5CC5C67B7C25C507447FF9"
+        },
+        "application": {
+          "application_id": "34C408AF469F027AC01E0732BDAC54B018B0B87F060FF5AEF204FD758C79F3F3"
+        },
+        "new": true,
+        "user_id": "34C408AF469F027AC01E0732BDAC54B018B0B87F060FF5AEF204FD758C79F3F3"
+      },
+      "request": {
+        "command": "",
+        "original_utterance": "",
+        "nlu": {
+          "tokens": [],
+          "entities": [],
+          "intents": {}
+        },
+        "markup": {
+          "dangerous_context": false
+        },
+        "type": "SimpleUtterance"
+      },
+      "state": {
+        "session": {},
+        "user": {},
+        "application": {}
+      },
+      "version": "1.0"
+    }
+  },
