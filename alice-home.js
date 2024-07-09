@@ -7,7 +7,7 @@ module.exports.handler = async (event, context) => {
         return state[name] ? state[name] : false;
     }
 
-    function make_reponse(text) {
+    function make_response(text) {
         return {
             response: {
                 text: text
@@ -18,16 +18,16 @@ module.exports.handler = async (event, context) => {
 
     function welcome(event) {
         text = "Вас приветствует помощник по подбору мероприятий. Куда бы вы хотели сходить?";
-        return make_reponse(text);
+        return make_response(text);
     }
 
     function startEventType(event) {
         text = "Постараюсь вам помочь";
-        return make_reponse(text);
+        return make_response(text);
     }
 
     function fallback(event) {
-        return make_reponse('Извините я вас не понял. Постарайтесь переформулировать.');
+        return make_response('Извините я вас не понял. Постарайтесь переформулировать.');
     }
 
     function aboutEvent(event) {

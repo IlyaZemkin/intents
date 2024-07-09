@@ -1,4 +1,12 @@
 module.exports.handler = async (event, context) => {
+    //context._data.request.nlu.tokens / entities / intents
+
+    let city = request ? request.state.session.city : null;              //город
+    let eventType = request ? request.state.session.eventType : null;   //тип события
+    let eventName = request ? request.state.session.eventName : null;   //название события
+    let location = request ? request.state.session.location : null;
+
+
     const {version, session, request} = event;
     const events = ['кино', 'театр', 'фильм', 'спектакль'];
     const places = { //Можно получать из карт яндекса
