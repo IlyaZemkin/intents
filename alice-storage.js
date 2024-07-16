@@ -1,5 +1,3 @@
-const { geolocation } = require("@yandex/ymaps3-types");
-
 module.exports.handler = async (event, context) => {
     const {version, session, request} = event;
     const GEOLOCATION_ALLOWED = 'Geolocation.Allowed';
@@ -16,7 +14,7 @@ module.exports.handler = async (event, context) => {
     let intents = event.request.nlu.intents;
     
 
-    function getState(name) {а
+    function getState(name) {
         let state = context._data.state ? context._data.state.session : false; 
         return state[name] ? state[name] : false;
     }
@@ -42,7 +40,8 @@ module.exports.handler = async (event, context) => {
         text: '',
         state: {},
         buttons: [],
-        directives: {}
+        directives: {},
+        card: {}
     }) {
         if(options.text.length == 0) {
             options.text = 'Задайте свой вопрос';
@@ -54,6 +53,7 @@ module.exports.handler = async (event, context) => {
             },
             version: '1.0'
         };
+
         if(options.buttons) {
             response.response.buttons = options.buttons;
         }
@@ -70,9 +70,9 @@ module.exports.handler = async (event, context) => {
     }
 
     function welcome(event) {
-        if(city) {
+        if(location) {
             return make_response({
-                text: 'Вас приветсвуте помощник по подбору мероприятий. Куда вы хотели бы сходить?',
+                text: 'Куда вы хотели бы сходить?',
                 buttons: [
                     button('В кино', false, false, true),
                     button('В театр', false, false, true),
@@ -81,14 +81,8 @@ module.exports.handler = async (event, context) => {
             });
         }
         else {
-            //todo: Дописать запрос геолокации
             return make_response({
-                text: 'Вас приветсвуте помощник по подбору мероприятий. Куда вы хотели бы сходить?',
-                buttons: [
-                    button('В кино', false, false, true),
-                    button('В театр', false, false, true),
-                    button('На концерт', false, false, true),
-                ],
+                text: 'Вас приветсвуте помощник по подбору мероприятий.',
                 directives: {
                     request_geolocation: {}
                 }
@@ -102,20 +96,25 @@ module.exports.handler = async (event, context) => {
         });
     }
 
-    function GeolocationCallback(event) {
-        if(event.request.type = GEOLOCATION_ALLOWED) {
+    function GeolocationCallback(event, state) {
+        if(event.request.type === GEOLOCATION_ALLOWED) {
             let location = event.session.location;
-            let lat = location.lat;
-            let lon = location.lon;
-            let text = `Ваши координаты: широта ${lat}, долгота ${lon}`;
-            
-            return make_response({
-                text: text,
-                state: {location : location}
-            });
+            let newState = state;
+            newState.location = location;
+
+                return make_response({
+                    text: 'Куда вы хотели бы сходить?',
+                    buttons: [
+                        button('В кино', false, false, true),
+                        button('В театр', false, false, true),
+                        button('На концерт', false, false, true),
+                    ],
+                    state, newState,
+                });
         }
         else {
-            let text = `К сожалению мне не удалось получить ваши координаты. Для дальнейшей работы навыка, требуется разрешить доступ к геопозиции.`;
+            let text = `К сожалению, мне не удалось получить ваши координаты. 
+            Для дальнейшей работы навыка, требуется разрешить доступ к геопозиции.`;
             return make_response({
                 text: text,
                 directives: {
@@ -125,13 +124,13 @@ module.exports.handler = async (event, context) => {
         }
     }
 
-    function AboutType(event) {
+    function AboutType(event, state) {
             eventType = intent.slots.event.value;
             text = 'На какое время?';
             return make_response({text: text, state: state})
     }
 
-    function ChoiceEvent(event) {
+    function ChoiceEvent(event, state) {
             let value = request.nlu.intents.choice_event.slots.event.value;
 
             let newState = state;
@@ -140,15 +139,19 @@ module.exports.handler = async (event, context) => {
 
             switch(value) {
                 case "cinema":
+
+                    //Отбираем афишу
+
                     return make_response({
-                        text: 'В какой кинотеатр?', 
+                        text: 'На какой фильм?', 
+                        //выводим афишу
                         state: newState
                     });
                 break;
     
                 case "piece":
                     return make_response({
-                        text: 'В какой театр?', 
+                        text: 'На какой спектакль?', 
                         state: newState
                     });
                 break;
@@ -166,16 +169,50 @@ module.exports.handler = async (event, context) => {
             }
     }
 
+    function SetEventName(event, state) {
+        let eventTypeName;
+        text = 'Вот что я могу вам предложить';
+
+        return make_response ({
+            text: text,
+            state: state,
+            buttons: [
+                button(`Расскажи о ${eventType}`),
+                button("Покажи расписание"),
+            ],
+        });
+    }
+
+    function AboutEvent(event, state) {
+        switch(event.request.intents.about_event.slots.eventname.value) {
+            case 'avatar':
+                text = 'Амбициозный режиссер Джеймс Кэмерон не забыл про свое грандиозное детище — выращенный на незамысловатой канве «Покахонтас» фантастический во всех смыслах «Аватар» все-таки продолжается спустя целых 12 лет. Согласно сюжету главные герои — Джейк (Сэм Уортингтон) и Нейтири (Зои Салдана) — обзавелись большой семьей и детьми. Однако помимо Нетей (Джэми Флэттерс), Лоак (Бритен Далтон) и Туктири (Тринити Блисс) они вынужденно принимают еще одного ребенка — родившегося на военной базе планеты Пандора Майлза Сокорро. Мальчишка не смог отправиться на Землю, поскольку был еще слишком мал. Мать Нейтири, разумеется, видит в приемном сыне потомка своих заклятых врагов, некогда разрушивших ее дом и убивших отца. Предчувствие не обманывает героиню Зои Салдана: выясняется, что человеческие захватчики намерены довести дело до конца и завоевать Пандору. Это первое из четырех запланированных продолжений «Аватара», часть съемок которого прошли под водой.'
+                return make_response ({
+                    text: text,
+                    state: state,
+                    card: {
+                        type: "BigImage",
+                        image_id: '213044/25302ec5ac34654caac1',
+                        description: text
+                    }
+                })
+            break;
+        }
+    }
+
+    intents = request.nlu.intents;
+    let state = event.state[STATE_REQUEST_KEY] || {};
+    let response;
+
     if(event.session.new) {
         return welcome(event);
     }
-    else if(event.request.type === GEOLOCATION_REJECTED || event.request.type === GEOLOCATION_ALLOWED) {
-        return GeolocationCallback(event);
+    else if(event.session.location) {
+        let state = event.state[STATE_REQUEST_KEY] || {};
+        return GeolocationCallback(event, state);
     }
     else if(Object.keys(intents).length > 0) {
-        let intents = request.nlu.intents;
-        let state = event.state[STATE_REQUEST_KEY] || {};
-        let response;
+        
 
         if(intents.choice_event) {
             response = ChoiceEvent(event, state);
@@ -184,9 +221,14 @@ module.exports.handler = async (event, context) => {
         if(intents.about_event) {
             response = AboutEvent(event, state);
         }
-        return response;
+
+        if(intents.set_event_name) {
+            response = SetEventName(event, state);
+        }
+        
     }
     else {
-        return fallback(event, 'Общий сброс');
+        let directiveType = event.request.type;
+        return fallback(event, `Общий сброс. ${directiveType}`);
     }
 };
