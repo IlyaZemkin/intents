@@ -1,0 +1,8 @@
+slots:
+    eventname:
+        source: $EventName
+        type: EventName
+root:
+    Расскажи про $EventName
+    Расскажи о фильме
+    Расскажи о $EventName

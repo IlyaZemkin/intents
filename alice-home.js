@@ -10,7 +10,7 @@ module.exports.handler = async (event, context) => {
   let eventType = getState("eventType"); //тип события
   let eventName = getState("eventName"); //название события
   let location = getState("location"); //местоположение
-  let intents = event.request.nlu.intents || {};
+  let intents = event.request.nlu.intents;
 
   function getState(name) {
     let state = context._data.state ? context._data.state.session : false;
@@ -37,10 +37,12 @@ module.exports.handler = async (event, context) => {
   function make_response(
     options = {
       text: "",
+      tts: false,
       state: {},
       buttons: [],
       directives: {},
       card: {},
+      hints: {},
     }
   ) {
     if (options.text.length == 0) {
@@ -53,6 +55,10 @@ module.exports.handler = async (event, context) => {
       },
       version: "1.0",
     };
+
+    if (options.tts) {
+      response.response.tts = options.tts;
+    }
 
     if (options.buttons) {
       response.response.buttons = options.buttons;
@@ -67,16 +73,20 @@ module.exports.handler = async (event, context) => {
     }
 
     if (options.card) {
-      response.response.card = card;
+      response.response.card = options.card;
+    }
+
+    if (options.hints) {
+      response.response.hints = options.hints;
     }
 
     return response;
   }
 
   function welcome(event) {
-    if (city) {
+    if (location) {
       return make_response({
-        text: "Вас приветсвуте помощник по подбору мероприятий. Куда вы хотели бы сходить?",
+        text: "Куда вы хотели бы сходить?",
         buttons: [
           button("В кино", false, false, true),
           button("В театр", false, false, true),
@@ -85,12 +95,7 @@ module.exports.handler = async (event, context) => {
       });
     } else {
       return make_response({
-        text: "Вас приветсвуте помощник по подбору мероприятий. Куда вы хотели бы сходить?",
-        buttons: [
-          button("В кино", false, false, true),
-          button("В театр", false, false, true),
-          button("На концерт", false, false, true),
-        ],
+        text: "Вас приветсвуте помощник по подбору мероприятий.",
         directives: {
           request_geolocation: {},
         },
@@ -99,24 +104,57 @@ module.exports.handler = async (event, context) => {
   }
 
   function fallback(event, methodName) {
+    text = `Извините, я вас не понял. Переформулируйте свой запрос. ${methodName}`;
     return make_response({
-      text: `Извините, я вас не понял. Переформулируйте свой запрос. ${methodName}`,
+      text: text,
+      //tts: '<audio-voice id="997614/8fd63b6c168a70fb3750" medium />',
+      tts: text,
     });
   }
 
-  function GeolocationCallback(event) {
-    if (event.request.type === GEOLOCATION_ALLOWED) {
+  async function getCityName(loc) {
+    var url =
+      "http://suggestions.dadata.ru/suggestions/api/4_1/rs/geolocate/address";
+    var token = "7b2755b3e17759a5541088f65d7b111701408985";
+    var query = { lat: loc.lat, lon: loc.lon };
+
+    var options = {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: "Token " + token,
+      },
+      body: JSON.stringify(query),
+    };
+
+    result = await fetch(url, options);
+    return await result.text();
+  }
+
+  async function GeolocationCallback(event, state) {
+    if (event.session.location) {
       let location = event.session.location;
-      let lat = location.lat;
-      let lon = location.lon;
-      let text = `Ваши координаты: широта ${lat}, долгота ${lon}`;
+      let newState = state;
+      newState.location = location;
+
+      city = await getCityName(location);
+
+      newState.city = JSON.parse(city).suggestions[0].data.city;
+
       return make_response({
-        text: text,
-        state: { location: location },
+        text: "Куда вы хотели бы сходить?",
+        buttons: [
+          button("В кино", false, false, true),
+          button("В театр", false, false, true),
+          button("На концерт", false, false, true),
+        ],
+        state: newState,
       });
     } else {
       let text = `К сожалению, мне не удалось получить ваши координаты. 
-            Для дальнейшей работы навыка, требуется разрешить доступ к геопозиции.`;
+          Для дальнейшей работы навыка, требуется разрешить доступ к геопозиции.`;
       return make_response({
         text: text,
         directives: {
@@ -129,37 +167,7 @@ module.exports.handler = async (event, context) => {
   function AboutType(event, state) {
     eventType = intent.slots.event.value;
     text = "На какое время?";
-    return make_response({ text: text, state: state });
-  }
-
-  function GetCard(type, image_id, description = '') {
-    switch(type) {
-        case 'big':
-            return {
-                type: 'BigImage',
-                image_id: image_id,
-                description: description
-            }
-        break;
-        case 'gallery':
-            return {
-                type: 'ImageGallery',
-                items: [
-                    { image_id : image_id[0] },
-                    { image_id : image_id[1] },
-                    { image_id : image_id[2] },
-                ]
-            }
-        break;
-    }
-  }
-
-  function AboutEvent(event, state) {
-    let text = 'О событии';
-    return make_response({
-        text: text,
-        card: GetCard('big', 'hhhhhh/dffffff', text)
-    })
+    return make_response({ text: text, tts: text, state: state });
   }
 
   function ChoiceEvent(event, state) {
@@ -171,15 +179,23 @@ module.exports.handler = async (event, context) => {
 
     switch (value) {
       case "cinema":
+        //Отбираем афишу
+
         return make_response({
-          text: "В какой кинотеатр?",
+          text: "На какой фильм?",
+          //выводим афишу в виде кнопок, ниже пример
+          buttons: [
+            button("Аватар", false, false, true),
+            button("Звездные войны", false, false, true),
+            button("Star Track", false, false, true),
+          ],
           state: newState,
         });
         break;
 
       case "piece":
         return make_response({
-          text: "В какой театр?",
+          text: "На какой спектакль?",
           state: newState,
         });
         break;
@@ -197,25 +213,66 @@ module.exports.handler = async (event, context) => {
     }
   }
 
+  function SetEventName(event, state) {
+    let eventTypeName;
+    text = "Вот что я могу вам предложить";
+
+    state.eventName = event.request.nlu.tokens;
+
+    eventTypeName = state.eventName;
+
+    return make_response({
+      text: text,
+      tts: text,
+      state: state,
+      buttons: [
+        button(`Расскажи о ${eventTypeName}`),
+        button("Покажи расписание"),
+      ],
+    });
+  }
+
+  function AboutEvent(event, state) {
+    // switch(event.request.intents.about_event.slots.eventname.value) {
+    //     case 'avatar':
+    text =
+      "Бывший морпех Джейк Салли прикован к инвалидному креслу. Несмотря на немощное тело, Джейк в душе по-прежнему остается воином. Он получает задание совершить путешествие в несколько световых лет к базе землян на планете Пандора, где корпорации добывают редкий минерал, имеющий огромное значение для выхода Земли из энергетического кризиса.";
+    tts =
+      "Бывший морпех Джейк Салли прикован к инвалидному креслу.sil<[1000]> Несмотря на немощное тело, Джейк в душе по-прежнему остается воином! Он получает задание совершить путешествие в несколько световых лет к базе землян на планете Пандора, где корпорации добывают редкий минерал, имеющий огромное значение для выхода Земли из энергетического кризиса.";
+
+    return make_response({
+      text: text,
+      tts: tts,
+      state: state,
+      card: {
+        type: "BigImage",
+        image_id: "997614/8fd63b6c168a70fb3750",
+        description: text,
+      },
+    });
+    //     break;
+    // }
+  }
+
+  intents = request.nlu.intents;
+  let state = event.state[STATE_REQUEST_KEY] || {};
+  let response;
+
   if (event.session.new) {
     return welcome(event);
-  }
-  //todo: Замучить техподдержку
-  else if (
-    event.request.type === GEOLOCATION_REJECTED ||
-    event.request.type === GEOLOCATION_ALLOWED
-  ) {
-    return GeolocationCallback(event);
+  } else if (event.session.location && intents.set_city) {
+    return await GeolocationCallback(event, state);
   } else if (Object.keys(intents).length > 0) {
-    let state = event.state[STATE_REQUEST_KEY] || {};
-    let response;
-
     if (intents.choice_event) {
       response = ChoiceEvent(event, state);
     }
 
     if (intents.about_event) {
       response = AboutEvent(event, state);
+    }
+
+    if (intents.set_event_name) {
+      response = SetEventName(event, state);
     }
 
     return response;

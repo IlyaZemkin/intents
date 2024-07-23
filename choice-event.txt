@@ -1,0 +1,18 @@
+slots:
+    event:
+        source: $Event
+        type: Event
+root:
+    $Start в $Event
+    $Start $Action $Event
+    $Start на? $Event
+    в $Event
+    на $Event
+$Start: 
+    %lemma
+    хочу
+    давай
+$Action:
+    посмотреть
+    сходить на?|сходить в?
+    глянуть
