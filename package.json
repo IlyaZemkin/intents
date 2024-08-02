@@ -1,8 +1,5 @@
 {
-  "devDependencies": {
-    "@yandex/ymaps3-types": "^0.0.27"
-  },
-  "dependencies": {
-    "@yandex/ymaps3-clusterer": "^0.0.9"
-  }
+  "name": "group7",
+  "version": "1.0.0",
+  "type": "module"
 }

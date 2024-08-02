@@ -1,6 +1,7 @@
-import { handle_fetch } from "./handle_fetch";
-
 module.exports.handler = async (event, context) => {
+
+    const { handle_fetch } = require("./handle_fetch.js");
+
     const { version, session, request } = event;
     const GEOLOCATION_ALLOWED = "Geolocation.Allowed";
     const GEOLOCATION_REJECTED = "Geolocation.Rejected";
@@ -161,7 +162,7 @@ module.exports.handler = async (event, context) => {
     }
 
     function AboutType(event, state) {
-        eventType = intent.slots.event.value;
+        eventType = intents.slots.event.value;
         text = "На какое время?";
         return make_response({ text: text, tts: text, state: state });
     }

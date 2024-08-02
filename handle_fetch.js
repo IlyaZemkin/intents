@@ -5,7 +5,7 @@ module.exports.handle_fetch = async (event, context) => {
         kinopoisk: "https://api.kinopoisk.dev/v1.4/movie/search?page=1&limit=1&query=",
     }
 
-    async function getExtarnalFetch(server, token, query = {}, method = 'GET') {
+    async function getExternalFetch(server, token = '', query = {}, method = 'GET') {
         var url = URLS[server];
 
         if(server === 'kinopoisk') {
@@ -14,7 +14,7 @@ module.exports.handle_fetch = async (event, context) => {
         }
         
         var options = {
-            method: "POST",
+            method: method,
             mode: "cors",
             headers: {
                 "Content-Type": "application/json",
@@ -25,17 +25,17 @@ module.exports.handle_fetch = async (event, context) => {
 
         switch(server) {
             case 'dadata':
-                options.headers.Authorization = "Token" + token;
+                options.headers.Authorization = "Token " + token;
             break;
-            
+
             case 'kinopoisk':
                 options.headers["X-API-KEY"] = token;
             break;
         }
         
         result = await fetch(url, options);
-        result = await result.text()
-        return JSON.parse()
+        result = await result.text();
+    
+        return JSON.parse(result);
     }
-
 }
